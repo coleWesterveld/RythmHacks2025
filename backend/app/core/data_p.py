@@ -58,7 +58,7 @@ def save_to_sqlite(df, db_path="guardian.db", table_name="patients"):
 
 
 #Full pipeline
-def run_pipeline(csv_path, db_path="guardian.db"):
+def run_pipeline(csv_path, db_path="../../guardian.db"):
     df = load_data(csv_path)
     print(f"loaded{len(df)} rows")
 

@@ -1,0 +1,13 @@
+{
+    "reference_id": "sensitive",
+    "report_year": "numeric",
+    "diagnosis_category": "categorical",
+    "diagnosis_sub_category": "sensitive",
+    "treatment_category": "categorical",
+    "treatment_sub_category": "sensitive",
+    "determination": "categorical",
+    "type": "categorical",
+    "age_range": "categorical",
+    "patient_gender": "categorical",
+    "findings": "sensitive"
+}
