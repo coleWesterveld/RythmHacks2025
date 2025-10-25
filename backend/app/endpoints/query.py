@@ -32,11 +32,11 @@ async def execute_differential_privacy_query(
                 detail="Epsilon must be between 0 and 10"
             )
 
-        # if not query.epsilon_budget or query.epislon > query.epsilon_budget:
-        #     raise HTTPException(
-        #         status_code=400,
-        #         detail="Epsilon must be less than epsilon budget"
-        #     )
+        if not query.epsilon_budget or query.epislon > query.epsilon_budget:
+            raise HTTPException(
+                status_code=400,
+                detail="Epsilon must be less than epsilon budget"
+            )
         
         # Execute the private query (database access handled in service)
         private_result, noise_added = dp_service.execute_private_query(
