@@ -1,5 +1,7 @@
 import numpy as np
 from typing import Dict, Any, Optional
+from sqlalchemy.orm import Session
+from sqlalchemy import text
 from app.schemas.query import QueryOperation
 
 class DifferentialPrivacyService:
@@ -16,18 +18,6 @@ class DifferentialPrivacyService:
         }
     
     def add_laplace_noise(self, true_value: float, epsilon: float, sensitivity: float) -> tuple[float, float]:
-        """
-        Add Laplace noise to achieve differential privacy
-        
-        Args:
-            true_value: The actual query result
-            epsilon: Privacy parameter (smaller = more private)
-            sensitivity: Global sensitivity of the query
-            
-        Returns:
-            Tuple of (noisy_result, noise_added)
-        """
-        # Laplace noise scale: sensitivity / epsilon
         scale = sensitivity / epsilon
         
         # Generate Laplace noise
@@ -44,6 +34,7 @@ class DifferentialPrivacyService:
         column: str, 
         table: str, 
         epsilon: float,
+        db: Session,
         filters: Optional[Dict[str, Any]] = None
     ) -> tuple[float, float]:
         """
@@ -59,8 +50,8 @@ class DifferentialPrivacyService:
         Returns:
             Tuple of (private_result, noise_added)
         """
-        # Get true result from database (stub for now)
-        true_result = self._get_true_result(operation, column, table, filters)
+        # Get true result from database
+        true_result = self._get_true_result(operation, column, table, db, filters)
         
         # Get sensitivity for this operation
         sensitivity = self.sensitivity[operation]
@@ -75,17 +66,22 @@ class DifferentialPrivacyService:
         operation: QueryOperation, 
         column: str, 
         table: str, 
+        db: Session,
         filters: Optional[Dict[str, Any]] = None
     ) -> float:
-        # Simulate different results based on operation
+        
         if operation == QueryOperation.COUNT:
-            return 1000.0  # Stub: 1000 records
+            result = db.execute(text(f"SELECT COUNT(*) FROM {table}")).scalar()
+            return float(result)
         elif operation == QueryOperation.SUM:
-            return 50000.0  # Stub: sum of values
+            result = db.execute(text(f"SELECT SUM({column}) FROM {table}")).scalar()
+            return float(result or 0)
         elif operation == QueryOperation.AVERAGE:
-            return 50.0  # Stub: average value
+            result = db.execute(text(f"SELECT AVG({column}) FROM {table}")).scalar()
+            return float(result or 0)
         
         return 0.0
     
     def validate_epsilon(self, epsilon: float) -> bool:
-        return epsilon > 0 and epsilon <= 10.0
+        print("Validating epsilon:", type(epsilon), epsilon)
+        return epsilon > 0.0 and epsilon <= 10.0

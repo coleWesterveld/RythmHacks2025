@@ -16,13 +16,9 @@ class UploadResponse(BaseModel):
 async def upload_csv(
     db: Session = Depends(get_db)
 ):
+    
     try:
-        df, schema = run_pipeline("app/core/Independent_Medical_Reviews.csv")
-
-        #testing databse
-        res =db.query("SELECT * FROM patients").all()
-
-        #testing schema
+        df, schema = run_pipeline("app/core/Independent_Medical_Reviews.csv", "hackathon.db")
         
         return UploadResponse(
             message="File uploaded and processed successfully",

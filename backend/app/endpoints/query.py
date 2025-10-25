@@ -26,16 +26,19 @@ async def execute_differential_privacy_query(
     """
     try:
         # Validate epsilon parameter
+        print("Validating epsilon:", type(query.epsilon), query.epsilon)
+
         if not dp_service.validate_epsilon(query.epsilon):
             raise HTTPException(
                 status_code=400, 
                 detail="Epsilon must be between 0 and 10"
             )
-
-        if not query.epsilon_budget or query.epislon > query.epsilon_budget:
+        
+        # Validate epsilon budget if provided
+        if query.epsilon_budget and query.epsilon > query.epsilon_budget:
             raise HTTPException(
                 status_code=400,
-                detail="Epsilon must be less than epsilon budget"
+                detail="Epsilon must be less than or equal to epsilon budget"
             )
         
         # Execute the private query (database access handled in service)
@@ -44,6 +47,7 @@ async def execute_differential_privacy_query(
             column=query.column,
             table=query.table,
             epsilon=query.epsilon,
+            db=db,
             filters=query.filters
         )
         

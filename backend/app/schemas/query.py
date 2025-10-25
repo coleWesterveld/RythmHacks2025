@@ -12,6 +12,7 @@ class DifferentialPrivacyQuery(BaseModel):
     column: str = Field(..., description="Column name to perform operation on")
     table: str = Field(..., description="Table name to query")
     epsilon: float = Field(..., gt=0, description="Privacy parameter (epsilon > 0)")
+    epsilon_budget: Optional[float] = Field(None, gt=0, description="Total privacy budget available (optional)")
     filters: Optional[Dict[str, Any]] = Field(None, description="Optional filters for the query")
 
 class QueryResponse(BaseModel):
