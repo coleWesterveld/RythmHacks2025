@@ -68,7 +68,7 @@ def run_pipeline(csv_path, db_path="../hackathon.db"):
 
     df = filter_sensitive(df, schema)
 
-    save_to_sqlite(df, db_path=db_path)
+    save_to_sqlite(df, db_path=db_path, table_name="patients")
 
     print(f"SQLite DB: {db_path}")
     print(f"Schema saved to: schema.json")

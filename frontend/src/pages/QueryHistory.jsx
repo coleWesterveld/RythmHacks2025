@@ -1,0 +1,167 @@
+import { useState } from 'react';
+import { Download, Clock, Filter, Search } from 'lucide-react';
+
+function QueryHistory() {
+  const [queries] = useState([
+    {
+      id: 1,
+      queryText: 'AVG(age) WHERE condition = "Diabetes"',
+      result: '48.1 years',
+      groundTruth: '47.9 years',
+      epsilonSpent: 0.5,
+      accuracy: '±2.1 years',
+      dataset: 'Patient Demographics Q3 2024',
+      executedAt: new Date(Date.now() - 7200000).toISOString(),
+      queryId: 'QRY-ABC123'
+    },
+    {
+      id: 2,
+      queryText: 'COUNT(*) WHERE age > 65',
+      result: '3,245 records',
+      groundTruth: '3,234 records',
+      epsilonSpent: 0.3,
+      accuracy: '±45 records',
+      dataset: 'Patient Demographics Q3 2024',
+      executedAt: new Date(Date.now() - 14400000).toISOString(),
+      queryId: 'QRY-DEF456'
+    },
+    {
+      id: 3,
+      queryText: 'SUM(days_in_hospital) WHERE condition = "Surgery"',
+      result: '15,234 days',
+      groundTruth: '15,189 days',
+      epsilonSpent: 0.7,
+      accuracy: '±120 days',
+      dataset: 'Patient Demographics Q3 2024',
+      executedAt: new Date(Date.now() - 21600000).toISOString(),
+      queryId: 'QRY-GHI789'
+    }
+  ]);
+
+  const formatTime = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffHours = Math.floor(diffMs / 3600000);
+    
+    if (diffHours < 1) return 'Just now';
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  return (
+    <div>
+      {/* Page Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Query History</h1>
+          <p className="text-gray-600 mt-1">Review all your privacy-preserving queries and results</p>
+        </div>
+        <button className="bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 hover:bg-blue-800 transition shadow-md">
+          <Download className="h-5 w-5" />
+          <span>Export History</span>
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+        <div className="flex space-x-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search queries..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <button className="px-4 py-2 border border-gray-300 rounded-lg flex items-center space-x-2 hover:bg-gray-50 transition">
+            <Filter className="h-5 w-5 text-gray-600" />
+            <span className="text-gray-700">Filter</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Query List */}
+      <div className="space-y-4">
+        {queries.map((query) => (
+          <div key={query.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1">
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className="text-xs font-semibold text-gray-500 uppercase">Query {query.queryId}</span>
+                  <span className="text-xs text-gray-400">•</span>
+                  <div className="flex items-center space-x-1 text-xs text-gray-500">
+                    <Clock className="h-3 w-3" />
+                    <span>{formatTime(query.executedAt)}</span>
+                  </div>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded p-3 mb-3">
+                  <code className="text-sm text-gray-800 font-mono">{query.queryText}</code>
+                </div>
+                <div className="text-xs text-gray-600">
+                  Dataset: {query.dataset}
+                </div>
+              </div>
+              <div className="ml-6">
+                <div className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                  ε {query.epsilonSpent}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+              <div>
+                <div className="text-xs text-gray-500 mb-1">Private Result</div>
+                <div className="text-lg font-semibold text-gray-900">{query.result}</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500 mb-1">Ground Truth</div>
+                <div className="text-lg font-semibold text-green-700">{query.groundTruth}</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500 mb-1">Accuracy</div>
+                <div className="text-lg font-semibold text-purple-700">{query.accuracy}</div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex space-x-2">
+              <button className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                View Certificate
+              </button>
+              <button className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                Re-run Query
+              </button>
+              <button className="px-4 py-2 text-sm text-blue-700 hover:bg-blue-50 rounded-lg transition">
+                <Download className="h-4 w-4 inline mr-1" />
+                Download
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Empty State - if no queries */}
+      {queries.length === 0 && (
+        <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+          <div className="text-gray-400 mb-4">
+            <Clock className="h-16 w-16 mx-auto" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Queries Yet</h3>
+          <p className="text-gray-600 mb-6">
+            Start running privacy-preserving queries to see your history here
+          </p>
+          <a
+            href="/workspace"
+            className="inline-flex items-center space-x-2 bg-blue-700 text-white px-6 py-3 rounded-lg hover:bg-blue-800 transition"
+          >
+            <span>Go to Query Workspace</span>
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default QueryHistory;
+

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.endpoints.query import router as query_router
 from app.endpoints.upload import router as upload_router
-from app.endpoints.columns import router as columns_router
+from app.endpoints.meta import router as meta_router
 
 app = FastAPI(title="Differential Privacy API", version="0.1.0")
 
@@ -18,7 +18,7 @@ app.add_middleware(
 # Include routers
 app.include_router(query_router, tags=["Differential Privacy"])
 app.include_router(upload_router, tags=["Data Upload"])
-app.include_router(columns_router, tags=["Schema"])
+app.include_router(meta_router, tags=["Meta Info"])
 
 @app.get("/")
 async def root():

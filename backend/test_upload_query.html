@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSV Upload & Query Test</title>
+</head>
+<body>
+  <h2>Upload CSV</h2>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".csv" required>
+    <button type="submit">Upload</button>
+  </form>
+  <pre id="uploadResult"></pre>
+
+  <h2>Query Database</h2>
+  <form id="queryForm">
+    <label>Database Name:
+      <select id="dbName" name="dbName" required></select>
+    </label><br>
+    <label>Table:
+      <select id="table" name="table" required></select>
+    </label><br>
+    <label>Column:
+      <select id="column" name="column" required></select>
+    </label><br>
+    <label>Operation:
+      <select id="operation" name="operation">
+        <option value="SUM">SUM</option>
+        <option value="COUNT">COUNT</option>
+        <option value="AVERAGE">AVERAGE</option>
+      </select>
+    </label><br>
+    <label>Epsilon: <input type="number" id="epsilon" name="epsilon" value="1" min="0.01" step="0.01" required></label><br>
+    <button type="submit">Run Query</button>
+  </form>
+  <pre id="queryResult"></pre>
+
+  <script>
+    // Upload CSV
+    document.getElementById('uploadForm').onsubmit = async function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const res = await fetch('http://localhost:8000/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      document.getElementById('uploadResult').textContent = JSON.stringify(data, null, 2);
+      if (data.database_name) {
+        document.getElementById('dbName').value = data.database_name;
+      }
+    };
+
+    // Query DB
+    document.getElementById('queryForm').onsubmit = async function(e) {
+      e.preventDefault();
+      const dbName = document.getElementById('dbName').value;
+      const table = document.getElementById('table').value;
+      const column = document.getElementById('column').value;
+      const operation = document.getElementById('operation').value;
+      const epsilon = parseFloat(document.getElementById('epsilon').value);
+      const res = await fetch('http://localhost:8000/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operation,
+          column,
+          table,
+          epsilon,
+          database_name: dbName
+        })
+      });
+      const data = await res.json();
+      document.getElementById('queryResult').textContent = JSON.stringify(data, null, 2);
+    };
+
+    // Populate databases dropdown
+    async function loadDatabases() {
+      const res = await fetch('http://localhost:8000/databases');
+      const data = await res.json();
+      const dbSelect = document.getElementById('dbName');
+      dbSelect.innerHTML = '';
+      data.databases.forEach(db => {
+        const opt = document.createElement('option');
+        opt.value = db.name;
+        opt.textContent = db.id + ' (' + db.name + ')';
+        dbSelect.appendChild(opt);
+      });
+      if (dbSelect.options.length > 0) {
+        dbSelect.value = dbSelect.options[0].value;
+        loadTables();
+      }
+    }
+
+    // Populate tables dropdown
+    async function loadTables() {
+      const dbName = document.getElementById('dbName').value;
+      const res = await fetch(`http://localhost:8000/tables?database=${dbName}`);
+      const data = await res.json();
+      const tableSelect = document.getElementById('table');
+      tableSelect.innerHTML = '';
+      data.tables.forEach(tbl => {
+        const opt = document.createElement('option');
+        opt.value = tbl;
+        opt.textContent = tbl;
+        tableSelect.appendChild(opt);
+      });
+      if (tableSelect.options.length > 0) {
+        tableSelect.value = tableSelect.options[0].value;
+        loadColumns();
+      }
+    }
+
+    // --- Column filtering by operation ---
+    let allColumns = [];
+    let numericColumns = [];
+
+    // Populate columns dropdown
+    async function loadColumns() {
+      const dbName = document.getElementById('dbName').value;
+      const table = document.getElementById('table').value;
+      const res = await fetch(`http://localhost:8000/columns?database=${dbName}&table=${table}`);
+      const data = await res.json();
+      allColumns = data.columns.map(col => col.name);
+      numericColumns = data.columns.filter(col => col.type === 'numeric').map(col => col.name);
+      updateColumnDropdown();
+    }
+
+    function updateColumnDropdown() {
+      const colSelect = document.getElementById('column');
+      const operation = document.getElementById('operation').value;
+      colSelect.innerHTML = '';
+      let colsToShow = [];
+      if (operation === 'SUM' || operation === 'AVERAGE') {
+        colsToShow = numericColumns;
+      } else {
+        colsToShow = allColumns;
+      }
+      colsToShow.forEach(col => {
+        const opt = document.createElement('option');
+        opt.value = col;
+        opt.textContent = col;
+        colSelect.appendChild(opt);
+      });
+    }
+
+    document.getElementById('operation').addEventListener('change', updateColumnDropdown);
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDatabases();
+      document.getElementById('dbName').addEventListener('change', loadTables);
+      document.getElementById('table').addEventListener('change', loadColumns);
+    });
+  </script>
+</body>
+</html>

@@ -1,23 +1,6 @@
 import { create } from 'zustand';
 
-// Get initial role from localStorage or default to 'admin'
-const getInitialRole = () => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('userRole') || 'admin';
-  }
-  return 'admin';
-};
-
 const useStore = create((set) => ({
-  // User state
-  userRole: getInitialRole(),
-  setUserRole: (role) => {
-    // Save to localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('userRole', role);
-    }
-    set({ userRole: role });
-  },
 
   // Privacy budget state
   privacyBudget: { spent: 1.2, total: 3.0 },
