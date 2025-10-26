@@ -53,13 +53,7 @@ class DifferentialPrivacyService:
         Returns:
             Tuple of (private_result, noise_added)
         """
-        # Optional: enforce minimum cohort size to avoid tiny groups
-        cohort_size = self._get_count(table, db, filters)
-        MIN_COHORT = 25
-        if cohort_size < MIN_COHORT:
-            raise ValueError(f"Cohort too small (n={cohort_size}). Minimum required is {MIN_COHORT} to protect privacy.")
-
-        # Get true result from database (with parameter binding)
+        # Get true result from database
         true_result = self._get_true_result(operation, column, table, db, filters)
         
         # Get sensitivity for this operation
@@ -70,17 +64,6 @@ class DifferentialPrivacyService:
         
         return private_result, noise
     
-    def _build_where_clause(self, filters: Optional[Dict[str, Any]]):
-        if not filters:
-            return "", {}
-        clauses = []
-        params = {}
-        for i, (col, val) in enumerate(filters.items()):
-            key = f"p{i}"
-            clauses.append(f"{col} = :{key}")
-            params[key] = val
-        return " WHERE " + " AND ".join(clauses), params
-
     def _get_true_result(
         self, 
         operation: QueryOperation, 
@@ -89,28 +72,44 @@ class DifferentialPrivacyService:
         db: Session,
         filters: Optional[Dict[str, {"value": Any, "operator": str}]] = None
     ) -> float:
-        where_sql, params = self._build_where_clause(filters)
-
+        
+        # Build WHERE clause from filters dict
+        where_clause = ""
+        params = {}
+        
+        if filters:
+            conditions = []
+            # Valid SQL operators to prevent injection
+            valid_operators = {'=', '>', '<', '>=', '<=', '!='}
+            
+            for key, body in filters.items():
+                #Shouldnt ever happen but whatever
+                if not body.value or not body.operator:
+                    continue
+                    
+                # Validate operator to prevent SQL injection
+                if body.operator not in valid_operators:
+                    raise ValueError(f"Invalid operator: {body.operator}")
+                    
+                param_name = f"filter_{key}"
+                conditions.append(f"{key} {body.operator} :{param_name}")
+                params[param_name] = body.value
+            where_clause = " WHERE " + " AND ".join(conditions)
+        
         if operation == QueryOperation.COUNT:
-            sql = text(f"SELECT COUNT(*) FROM {table}{where_sql}")
-            result = db.execute(sql, params).scalar()
-            return float(result or 0)
+            query = f"SELECT COUNT(*) FROM {table}{where_clause}"
+            result = db.execute(text(query), params).scalar()
+            return float(result)
         elif operation == QueryOperation.SUM:
-            sql = text(f"SELECT SUM({column}) FROM {table}{where_sql}")
-            result = db.execute(sql, params).scalar()
+            query = f"SELECT SUM({column}) FROM {table}{where_clause}"
+            result = db.execute(text(query), params).scalar()
             return float(result or 0)
         elif operation == QueryOperation.AVERAGE:
-            sql = text(f"SELECT AVG({column}) FROM {table}{where_sql}")
-            result = db.execute(sql, params).scalar()
+            query = f"SELECT AVG({column}) FROM {table}{where_clause}"
+            result = db.execute(text(query), params).scalar()
             return float(result or 0)
         
         return 0.0
-
-    def _get_count(self, table: str, db: Session, filters: Optional[Dict[str, Any]] = None) -> int:
-        where_sql, params = self._build_where_clause(filters)
-        sql = text(f"SELECT COUNT(*) FROM {table}{where_sql}")
-        result = db.execute(sql, params).scalar()
-        return int(result or 0)
     
     def validate_epsilon(self, epsilon: float) -> bool:        
         return epsilon > 0.0 and epsilon <= 10.0
