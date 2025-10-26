@@ -61,20 +61,28 @@ async def upload_csv(
     try:
         # Validate file type
         validate_csv_file(file)
-        
+
         # Save file
         file_location = save_upload_file(file)
-        
-        # Generate unique database name in app/core/
-        db_name = f"db_{uuid.uuid4().hex[:8]}.db"
+
+        # Use CSV filename (without extension) as DB name
+        base_name = os.path.splitext(file.filename)[0]
+        safe_base = base_name.replace(' ', '_').replace('.', '_')
+        db_name = f"{safe_base}.db"
         db_path = os.path.join("app", "core", db_name)
+        suffix = 1
+        # If DB exists, add suffix
+        while os.path.exists(db_path):
+            db_name = f"{safe_base}_{suffix}.db"
+            db_path = os.path.join("app", "core", db_name)
+            suffix += 1
 
         # Process the file
         df, schema = run_pipeline(file_location, db_path)
-        
+
         # Clean up the uploaded file
         os.remove(file_location)
-        
+
         return UploadResponse(
             message="File uploaded and processed successfully",
             filename=file.filename,
