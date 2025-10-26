@@ -71,14 +71,42 @@ class DifferentialPrivacyService:
         return private_result, noise
     
     def _build_where_clause(self, filters: Optional[Dict[str, Any]]):
+        """
+        Build WHERE clause from filters.
+        Accepts either:
+        - Dict[str, Any]: legacy format {column: value} (assumes equality)
+        - Dict[str, FilterCondition]: new format {column: {value, operator}} or Pydantic model
+        """
         if not filters:
             return "", {}
+        
         clauses = []
         params = {}
-        for i, (col, val) in enumerate(filters.items()):
+        
+        for i, (col, filter_spec) in enumerate(filters.items()):
             key = f"p{i}"
-            clauses.append(f"{col} = :{key}")
-            params[key] = val
+            
+            # Check if filter_spec is a Pydantic model (has attributes)
+            if hasattr(filter_spec, 'operator') and hasattr(filter_spec, 'value'):
+                operator = filter_spec.operator
+                value = filter_spec.value
+            # Check if filter_spec is a dict with operator (dict format)
+            elif isinstance(filter_spec, dict) and 'operator' in filter_spec:
+                operator = filter_spec['operator']
+                value = filter_spec['value']
+            else:
+                # Legacy format: plain value means equality
+                operator = '='
+                value = filter_spec
+            
+            # Validate operator for safety (prevent SQL injection)
+            allowed_operators = ['=', '!=', '>', '>=', '<', '<=']
+            if operator not in allowed_operators:
+                operator = '='
+            
+            clauses.append(f"{col} {operator} :{key}")
+            params[key] = value
+        
         return " WHERE " + " AND ".join(clauses), params
 
     def _get_true_result(

@@ -34,6 +34,16 @@ export const listColumns = async (databaseName, table) => {
   return response.data; // { columns: [{ name, type }] }
 };
 
+export const getColumnValues = async (databaseName, table, column, limit = 50) => {
+  const response = await api.get('/column_values', { params: { database: databaseName, table, column, limit } });
+  return response.data; // { type, values? , min?, max? }
+};
+
+export const deleteDatabase = async (databaseName) => {
+  const response = await api.delete('/database', { params: { database: databaseName } });
+  return response.data;
+};
+
 // Execute DP query
 export const executeDPQuery = async ({ operation, column, table, epsilon, filters, database_name, epsilon_budget }) => {
   const payload = { operation, column, table, epsilon, filters, database_name, epsilon_budget };
@@ -46,6 +56,8 @@ export default {
   listDatabases,
   listTables,
   listColumns,
+  getColumnValues,
+  deleteDatabase,
   executeDPQuery,
 };
 

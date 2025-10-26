@@ -46,7 +46,7 @@ function EpsilonSlider({ value, onChange, remainingBudget, totalBudget, maxPerQu
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Privacy vs. Accuracy</h3>
         <div className="text-xs text-gray-500 flex items-center space-x-2">
-          <Shield className="h-4 w-4 text-blue-700" />
+          <Shield className="h-4 w-4 text-purple-700" />
           <span>Max per query: {maxPerQuery.toFixed(1)} ε</span>
         </div>
       </div>
@@ -58,15 +58,33 @@ function EpsilonSlider({ value, onChange, remainingBudget, totalBudget, maxPerQu
             <span>Overall budget</span>
             <span>{(total - spent).toFixed(1)} / {total.toFixed(1)} ε</span>
           </div>
-          <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-            <div className="h-full bg-gray-400" style={{ width: `${spentPct}%` }} />
-            <div className="h-full bg-amber-400" style={{ width: `${proposedPct}%` }} />
-            <div className="h-full bg-green-500" style={{ width: `${remainingAfterPct}%` }} />
+          <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden flex">
+            {spentPct > 0 && (
+              <div 
+                className="h-full bg-gray-400" 
+                style={{ width: `${spentPct}%` }}
+                title={`Spent: ${spent.toFixed(1)} ε`}
+              />
+            )}
+            {proposedPct > 0 && (
+              <div 
+                className="h-full bg-amber-400" 
+                style={{ width: `${proposedPct}%` }}
+                title={`This query: ${epsilon.toFixed(1)} ε`}
+              />
+            )}
+            {remainingAfterPct > 0 && (
+              <div 
+                className="h-full bg-green-500" 
+                style={{ width: `${remainingAfterPct}%` }}
+                title={`Remaining: ${remainingAfter.toFixed(1)} ε`}
+              />
+            )}
           </div>
           <div className="flex justify-between text-[11px] text-gray-500 mt-1">
-            <span>Spent</span>
-            <span>After this query</span>
-            <span>Remaining</span>
+            <span>Spent: {spent.toFixed(1)} ε</span>
+            <span className="text-amber-600 font-medium">This query: {epsilon.toFixed(1)} ε</span>
+            <span>After: {remainingAfter.toFixed(1)} ε</span>
           </div>
         </div>
       )}
@@ -81,7 +99,7 @@ function EpsilonSlider({ value, onChange, remainingBudget, totalBudget, maxPerQu
         </div>
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center space-x-2 text-gray-600">
-            <Lock className="h-4 w-4 text-blue-700" />
+            <Lock className="h-4 w-4 text-purple-700" />
             <span>Stronger Privacy</span>
           </div>
           <div className="flex items-center space-x-2 text-gray-600">
@@ -98,7 +116,7 @@ function EpsilonSlider({ value, onChange, remainingBudget, totalBudget, maxPerQu
             step={0.1}
             value={epsilon}
             onChange={handleChange}
-            className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-700"
+            className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-purple-700"
           />
           <input
             type="number"
@@ -117,13 +135,13 @@ function EpsilonSlider({ value, onChange, remainingBudget, totalBudget, maxPerQu
         </div>
 
         {/* Info Box */}
-        <div className={`p-4 rounded-lg ${insufficient ? 'bg-red-50 border border-red-200' : 'bg-blue-50 border border-blue-200'}`}>
+        <div className={`p-4 rounded-lg ${insufficient ? 'bg-red-50 border border-red-200' : 'bg-purple-50 border border-purple-200'}`}>
           {insufficient ? (
             <p className="text-sm text-red-700">
               ⚠️ Insufficient budget. You have {(remainingBudget ?? 0).toFixed(1)} ε remaining.
             </p>
           ) : (
-            <p className="text-sm text-blue-700">
+            <p className="text-sm text-purple-700">
               This query will use <strong>{epsilon.toFixed(1)} ε</strong>. Remaining after: <strong>{remainingAfter.toFixed(1)} ε</strong>
             </p>
           )}

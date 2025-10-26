@@ -1,7 +1,8 @@
-import { Database, Upload, ChevronDown, ChevronRight, Lock } from 'lucide-react';
+import { Database, Upload, ChevronDown, ChevronRight, Lock, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { deleteDatabase } from '../../services/api';
 
-function DatasetExplorer({ datasets, selectedDataset, onSelectDataset, onUploadClick }) {
+function DatasetExplorer({ datasets, selectedDataset, onSelectDataset, onUploadClick, onDelete }) {
   const [expandedDatasets, setExpandedDatasets] = useState({});
 
   const toggleExpand = (datasetId) => {
@@ -26,7 +27,7 @@ function DatasetExplorer({ datasets, selectedDataset, onSelectDataset, onUploadC
           <h3 className="text-sm font-semibold text-gray-900">Your Datasets</h3>
           <button
             onClick={onUploadClick}
-            className="p-1.5 bg-blue-700 text-white rounded hover:bg-blue-800 transition"
+            className="p-1.5 bg-purple-700 text-white rounded hover:bg-purple-800 transition"
             title="Upload new dataset"
           >
             <Upload className="h-4 w-4" />
@@ -42,19 +43,21 @@ function DatasetExplorer({ datasets, selectedDataset, onSelectDataset, onUploadC
             {datasets.map((dataset) => (
               <div key={dataset.id} className="border border-gray-200 rounded-lg overflow-hidden">
                 {/* Dataset Header */}
-                <button
-                  onClick={() => {
-                    onSelectDataset(dataset);
-                    toggleExpand(dataset.id);
-                  }}
-                  className={`w-full p-3 text-left hover:bg-gray-50 transition ${
-                    selectedDataset?.id === dataset.id ? 'bg-blue-50 border-l-4 border-l-blue-700' : ''
+                <div
+                  className={`w-full p-3 hover:bg-gray-50 transition cursor-pointer ${
+                    selectedDataset?.id === dataset.id ? 'bg-purple-50 border-l-4 border-l-purple-700' : ''
                   }`}
                 >
                   <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
+                    <div 
+                      className="flex-1 min-w-0"
+                      onClick={() => {
+                        onSelectDataset(dataset);
+                        toggleExpand(dataset.id);
+                      }}
+                    >
                       <div className="flex items-center space-x-2 mb-1">
-                        <Database className="h-4 w-4 text-blue-700 flex-shrink-0" />
+                        <Database className="h-4 w-4 text-purple-700 flex-shrink-0" />
                         <span className="text-sm font-medium text-gray-900 truncate">
                           {dataset.name}
                         </span>
@@ -85,13 +88,41 @@ function DatasetExplorer({ datasets, selectedDataset, onSelectDataset, onUploadC
                         />
                       </div>
                     </div>
-                    {expandedDatasets[dataset.id] ? (
-                      <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
-                    )}
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            await deleteDatabase(dataset.databaseName);
+                            // Call parent callback to refresh list
+                            if (onDelete) {
+                              onDelete(dataset.databaseName);
+                            }
+                          } catch (err) {
+                            console.error('Failed to delete dataset:', err);
+                          }
+                        }}
+                        className="p-1 rounded hover:bg-red-50"
+                        title="Delete dataset"
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                      </button>
+                      <div 
+                        onClick={() => {
+                          onSelectDataset(dataset);
+                          toggleExpand(dataset.id);
+                        }}
+                        className="cursor-pointer"
+                      >
+                        {expandedDatasets[dataset.id] ? (
+                          <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </button>
+                </div>
 
                 {/* Schema Preview */}
                 {expandedDatasets[dataset.id] && dataset.schema && (
@@ -134,7 +165,7 @@ function DatasetExplorer({ datasets, selectedDataset, onSelectDataset, onUploadC
             <p className="text-sm text-gray-500 mb-3">No datasets yet</p>
             <button
               onClick={onUploadClick}
-              className="text-sm text-blue-700 hover:text-blue-800 font-medium"
+              className="text-sm text-purple-700 hover:text-purple-800 font-medium"
             >
               Upload your first dataset
             </button>
@@ -149,7 +180,7 @@ function DatasetExplorer({ datasets, selectedDataset, onSelectDataset, onUploadC
             <Lock className="h-3 w-3" />
             <span>All data encrypted at rest</span>
           </div>
-          <a href="#" className="text-blue-600 hover:text-blue-700">
+          <a href="#" className="text-purple-600 hover:text-purple-700">
             Learn about privacy guarantees →
           </a>
         </div>

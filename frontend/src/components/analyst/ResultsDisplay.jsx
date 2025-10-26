@@ -1,8 +1,35 @@
-import { CheckCircle, Clock, Database, Eye, EyeOff, ChevronDown } from 'lucide-react';
+import { CheckCircle, Clock, Database, Eye, EyeOff, ChevronDown, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 
-function ResultsDisplay({ result, queryHistory }) {
+function ResultsDisplay({ result, queryHistory, error }) {
   const [showGroundTruth, setShowGroundTruth] = useState(true);
+
+  // Show error if present
+  if (error) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg h-full flex items-center justify-center p-8">
+        <div className="text-center max-w-md">
+          <div className="mb-4">
+            <AlertTriangle className="h-16 w-16 text-yellow-500 mx-auto" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Query Failed</h3>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-left mb-4">
+            <p className="text-sm text-yellow-900">
+              {error}
+            </p>
+          </div>
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-left">
+            <div className="text-sm font-medium text-purple-900 mb-2">Common issues:</div>
+            <ul className="text-xs text-purple-700 space-y-1">
+              <li>• Cohort too small (minimum 25 records required)</li>
+              <li>• Insufficient privacy budget remaining</li>
+              <li>• Invalid filter values or operators</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!result) {
     return (
@@ -15,9 +42,9 @@ function ResultsDisplay({ result, queryHistory }) {
           <p className="text-gray-600 mb-4 text-sm">
             Build a query and click "Run Private Query" to see your results here
           </p>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
-            <div className="text-sm font-medium text-blue-900 mb-2">What you'll see:</div>
-            <ul className="text-xs text-blue-700 space-y-1">
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-left">
+            <div className="text-sm font-medium text-purple-900 mb-2">What you'll see:</div>
+            <ul className="text-xs text-purple-700 space-y-1">
               <li>• Privacy-preserving result value</li>
               <li>• Ground truth comparison (demo)</li>
               <li>• Accuracy estimate</li>
@@ -44,8 +71,8 @@ function ResultsDisplay({ result, queryHistory }) {
         </div>
 
         {/* Result Display */}
-        <div className="text-center py-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-          <div className="text-xs text-blue-700 font-semibold uppercase tracking-wide mb-2">
+        <div className="text-center py-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200">
+          <div className="text-xs text-purple-700 font-semibold uppercase tracking-wide mb-2">
             {result.label}
           </div>
           <div className="text-5xl font-bold text-gray-900 mb-2">
@@ -55,11 +82,11 @@ function ResultsDisplay({ result, queryHistory }) {
             <div className="text-sm text-gray-600">{result.unit}</div>
           )}
           
-          <div className="mt-4 inline-block px-4 py-2 bg-blue-700 text-white rounded-full text-sm font-medium">
+          <div className="mt-4 inline-block px-4 py-2 bg-purple-700 text-white rounded-full text-sm font-medium">
             ε {result.epsilonSpent} spent
           </div>
           
-          <div className="mt-2 text-sm text-blue-700">
+          <div className="mt-2 text-sm text-purple-700">
             Accuracy: ±{result.accuracy}
           </div>
         </div>
@@ -88,7 +115,7 @@ function ResultsDisplay({ result, queryHistory }) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="text-xs text-gray-600 mb-1">Private Result</div>
-                    <div className="text-2xl font-bold text-blue-700">{result.value}</div>
+                    <div className="text-2xl font-bold text-purple-700">{result.value}</div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-600 mb-1">Ground Truth</div>

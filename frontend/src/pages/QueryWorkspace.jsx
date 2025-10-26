@@ -8,6 +8,7 @@ import { uploadDataset, listDatabases, listTables, listColumns, executeDPQuery }
 function QueryWorkspace() {
   const [selectedDataset, setSelectedDataset] = useState(null);
   const [result, setResult] = useState(null);
+  const [queryError, setQueryError] = useState(null);
   const [queryHistory, setQueryHistory] = useState([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [datasets, setDatasets] = useState([]); // built from backend databases + columns
@@ -16,66 +17,78 @@ function QueryWorkspace() {
   const [uploading, setUploading] = useState(false);
 
   // Load databases and build dataset objects
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const dbRes = await listDatabases(); // { databases: [{ id, name }] }
-        const dbs = dbRes.databases || [];
-        if (dbs.length === 0) {
-          setDatasets([]);
-          setSelectedDataset(null);
-          return;
-        }
-
-        // Pick first database
-        const dbName = dbs[0].name; // e.g., db_XXXXXXXX.db
-        const tablesRes = await listTables(dbName);
-        const tables = tablesRes.tables || [];
-        const tableName = tables[0];
-        setSelectedTable(tableName || null);
-
-        let schemaObj = { tableName: tableName || 'data', columns: [] };
-        if (tableName) {
-          const colsRes = await listColumns(dbName, tableName); // { columns: [{name,type}] }
-          const cols = colsRes.columns || [];
-          schemaObj.columns = cols.map(c => ({
-            name: c.name,
-            type: c.type === 'numeric' ? 'Numeric' : 'Categorical',
-            queryable: true,
-            icon: c.type === 'numeric' ? '' : ''
-          }));
-        }
-
-        const dataset = {
-          id: dbs[0].id,
-          name: dbName,
-          description: 'Uploaded dataset',
-          schema: schemaObj,
-          databaseName: dbName,
-          table: tableName,
-          epsilonRemaining: 5.0,
-          epsilonTotal: 5.0,
-          recordCount: 0,
-        };
-        setDatasets([dataset]);
-        setSelectedDataset(dataset);
-      } catch (e) {
-        // If backend not available, keep empty state
+  const loadDatasets = async () => {
+    try {
+      const dbRes = await listDatabases(); // { databases: [{ id, name }] }
+      const dbs = dbRes.databases || [];
+      if (dbs.length === 0) {
         setDatasets([]);
+        setSelectedDataset(null);
+        return;
       }
-    };
-    load();
+
+      // Pick first database
+      const dbName = dbs[0].name; // e.g., db_XXXXXXXX.db
+      const tablesRes = await listTables(dbName);
+      const tables = tablesRes.tables || [];
+      const tableName = tables[0];
+      setSelectedTable(tableName || null);
+
+      let schemaObj = { tableName: tableName || 'data', columns: [] };
+      if (tableName) {
+        const colsRes = await listColumns(dbName, tableName); // { columns: [{name,type}] }
+        const cols = colsRes.columns || [];
+        schemaObj.columns = cols.map(c => ({
+          name: c.name,
+          type: c.type === 'numeric' ? 'Numeric' : 'Categorical',
+          queryable: true,
+          icon: c.type === 'numeric' ? '' : ''
+        }));
+      }
+
+      const dataset = {
+        id: dbs[0].id,
+        name: dbName,
+        description: 'Uploaded dataset',
+        schema: schemaObj,
+        databaseName: dbName,
+        table: tableName,
+        epsilonRemaining: 5.0,
+        epsilonTotal: 5.0,
+        recordCount: 0,
+      };
+      setDatasets([dataset]);
+      setSelectedDataset(dataset);
+    } catch (e) {
+      // If backend not available, keep empty state
+      setDatasets([]);
+    }
+  };
+
+  useEffect(() => {
+    loadDatasets();
   }, []);
+
+  const handleDelete = async (databaseName) => {
+    // Reload datasets after deletion
+    await loadDatasets();
+  };
 
   const handleExecuteQuery = async (query) => {
     if (!selectedDataset) return;
+    
+    // Clear previous error
+    setQueryError(null);
+    
     const operation = query.type === 'average' ? 'AVERAGE' : query.type === 'sum' ? 'SUM' : 'COUNT';
-    // Backend expects filters as an object (dict), not an array.
-    // Convert [{column, operator, value}] -> { column: value } (operator currently ignored by backend)
+    // Backend expects filters as an object (dict) with {column: {value, operator}}
     const filtersPayload = Array.isArray(query.filters) && query.filters.length
       ? query.filters.reduce((acc, f) => {
-          if (f && f.column && typeof f.value !== 'undefined') {
-            acc[f.column] = f.value;
+          if (f && f.column && typeof f.value !== 'undefined' && f.value !== '') {
+            acc[f.column] = {
+              value: f.value,
+              operator: f.operator || '='
+            };
           }
           return acc;
         }, {})
@@ -122,8 +135,11 @@ function QueryWorkspace() {
       setResult(resObj);
       setQueryHistory(h => ([...h, { label: resObj.label, epsilon: query.epsilon, timestamp: new Date().toISOString() }]));
     } catch (e) {
-      // Fallback: keep previous behavior or show error
       console.error('Query failed', e);
+      // Extract error message from axios error
+      const errorMessage = e.response?.data?.detail || e.message || 'Query execution failed';
+      setQueryError(errorMessage);
+      setResult(null); // Clear previous result on error
     }
   };
 
@@ -144,6 +160,7 @@ function QueryWorkspace() {
             selectedDataset={selectedDataset}
             onSelectDataset={setSelectedDataset}
             onUploadClick={() => setShowUploadModal(true)}
+            onDelete={handleDelete}
           />
         </div>
 
@@ -163,14 +180,15 @@ function QueryWorkspace() {
           <ResultsDisplay 
             result={result} 
             queryHistory={queryHistory}
+            error={queryError}
           />
         </div>
       </div>
 
       {/* Upload Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-lg w-full p-6">
+        <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl border border-gray-200">
             <h2 className="text-2xl font-bold mb-4">Upload Dataset</h2>
             <div className="space-y-4">
               <input
@@ -264,7 +282,7 @@ function QueryWorkspace() {
                       setUploading(false);
                     }
                   }}
-                  className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 disabled:opacity-50"
+                  className="px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800 disabled:opacity-50"
                   disabled={!uploadFile || uploading}
                 >
                   {uploading ? 'Uploading...' : 'Upload'}

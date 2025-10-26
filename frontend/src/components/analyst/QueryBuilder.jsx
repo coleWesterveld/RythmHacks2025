@@ -8,6 +8,34 @@ function QueryBuilder({ dataset, schema, remainingBudget, totalBudget, onExecute
   const [filters, setFilters] = useState([]);
   const [epsilon, setEpsilon] = useState(0.5);
 
+  // Helper: Get column type from schema
+  const getColumnType = (columnName) => {
+    if (!schema?.columns) return null;
+    const col = schema.columns.find(c => c.name === columnName);
+    return col?.type || null;
+  };
+
+  // Helper: Check if a column name suggests it's binary (0/1)
+  const isBinaryColumn = (columnName) => {
+    if (!columnName) return false;
+    const lower = columnName.toLowerCase();
+    // Check for common boolean/binary naming patterns
+    return lower.includes('has') || 
+           lower.includes('is') || 
+           lower.includes('flag') || 
+           lower.includes('binary') ||
+           lower.endsWith('_bool') ||
+           lower.endsWith('_bin');
+  };
+
+  // Helper: Get allowed operators based on column type (no data hints needed)
+  const getAllowedOperators = (columnName) => {
+    const colType = getColumnType(columnName);
+    if (colType === 'Categorical' || isBinaryColumn(columnName)) return ['=', '!='];
+    if (colType === 'Numeric') return ['=', '!=', '>', '>=', '<', '<='];
+    return ['='];
+  };
+
   if (!dataset || !schema) {
     return (
       <div className="bg-white border border-gray-200 rounded-lg h-full flex items-center justify-center p-8">
@@ -79,7 +107,7 @@ function QueryBuilder({ dataset, schema, remainingBudget, totalBudget, onExecute
               setQueryType(e.target.value);
               setSelectedColumn('');
             }}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           >
             <option value="count">Count rows</option>
             <option value="average">Calculate average</option>
@@ -95,7 +123,7 @@ function QueryBuilder({ dataset, schema, remainingBudget, totalBudget, onExecute
           <select
             value={selectedColumn}
             onChange={(e) => setSelectedColumn(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           >
             <option value="">Select a column</option>
             {getColumnsForQueryType().map((col, idx) => (
@@ -114,7 +142,7 @@ function QueryBuilder({ dataset, schema, remainingBudget, totalBudget, onExecute
             </label>
             <button
               onClick={addFilter}
-              className="text-sm text-blue-700 hover:text-blue-800 flex items-center space-x-1"
+              className="text-sm text-purple-700 hover:text-purple-800 flex items-center space-x-1"
             >
               <Plus className="h-4 w-4" />
               <span>Add Filter</span>
@@ -122,48 +150,95 @@ function QueryBuilder({ dataset, schema, remainingBudget, totalBudget, onExecute
           </div>
 
           {filters.length > 0 ? (
-            <div className="space-y-2">
-              {filters.map((filter, idx) => (
-                <div key={idx} className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <select
-                    value={filter.column}
-                    onChange={(e) => updateFilter(idx, 'column', e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm"
-                  >
-                    <option value="">Select column</option>
-                    {queryableColumns.map((col, colIdx) => (
-                      <option key={colIdx} value={col.name}>
-                        {col.name}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={filter.operator}
-                    onChange={(e) => updateFilter(idx, 'operator', e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded text-sm"
-                  >
-                    <option value="=">=</option>
-                    <option value=">">{'>'}</option>
-                    <option value="<">{'<'}</option>
-                    <option value=">=">≥</option>
-                    <option value="<=">≤</option>
-                    <option value="!=">≠</option>
-                  </select>
-                  <input
-                    type="text"
-                    value={filter.value}
-                    onChange={(e) => updateFilter(idx, 'value', e.target.value)}
-                    placeholder="Value"
-                    className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded text-sm"
-                  />
-                  <button
-                    onClick={() => removeFilter(idx)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded transition"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
+            <div className="space-y-3">
+              {filters.map((filter, idx) => {
+                const colType = getColumnType(filter.column);
+                const operators = getAllowedOperators(filter.column);
+                const isBinary = isBinaryColumn(filter.column);
+
+                return (
+                  <div key={idx} className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+                    {/* Column selector */}
+                    <select
+                      value={filter.column || ''}
+                      onChange={(e) => {
+                        updateFilter(idx, 'column', e.target.value);
+                        updateFilter(idx, 'value', ''); // Reset value when column changes
+                      }}
+                      className="w-28 flex-shrink-0 px-2 py-2 border border-gray-300 rounded text-sm"
+                    >
+                      <option value="">Select column</option>
+                      {queryableColumns.map((col, colIdx) => (
+                        <option key={colIdx} value={col.name}>
+                          {col.name} ({col.type})
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* Operator selector */}
+                    <select
+                      value={operators.includes(filter.operator) ? filter.operator : operators[0]}
+                      onChange={(e) => updateFilter(idx, 'operator', e.target.value)}
+                      className="w-14 flex-shrink-0 px-1 py-2 border border-gray-300 rounded text-sm"
+                      disabled={!filter.column}
+                    >
+                      {operators.map(op => (
+                        <option key={op} value={op}>{op}</option>
+                      ))}
+                    </select>
+
+                    {/* Value input - type-based only (no data hints) */}
+                    {!filter.column ? (
+                      <input
+                        type="text"
+                        disabled
+                        value=""
+                        placeholder="Select column first"
+                        className="flex-1 min-w-0 px-2 py-2 border border-gray-300 rounded text-sm bg-gray-100"
+                      />
+                    ) : isBinary ? (
+                      // Binary columns (0/1): dropdown
+                      <select
+                        value={filter.value || ''}
+                        onChange={(e) => updateFilter(idx, 'value', e.target.value)}
+                        className="flex-1 min-w-0 px-2 py-2 border border-gray-300 rounded text-sm"
+                      >
+                        <option value="">Select value</option>
+                        <option value="0">No (0)</option>
+                        <option value="1">Yes (1)</option>
+                      </select>
+                    ) : colType === 'Numeric' ? (
+                      // Numeric: number input (no range hints for privacy)
+                      <input
+                        type="number"
+                        value={filter.value || ''}
+                        onChange={(e) => updateFilter(idx, 'value', e.target.value)}
+                        placeholder="Enter number"
+                        step="any"
+                        className="flex-1 min-w-0 px-2 py-2 border border-gray-300 rounded text-sm"
+                      />
+                    ) : (
+                      // Categorical: text input (no suggestions for privacy)
+                      <input
+                        type="text"
+                        value={filter.value || ''}
+                        onChange={(e) => updateFilter(idx, 'value', e.target.value)}
+                        placeholder="Enter value"
+                        className="flex-1 min-w-0 px-2 py-2 border border-gray-300 rounded text-sm"
+                      />
+                    )}
+
+                    {/* Remove button */}
+                    <button
+                      onClick={() => removeFilter(idx)}
+                      className="p-1.5 text-red-600 hover:bg-red-50 rounded transition flex-shrink-0"
+                      title="Remove filter"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="text-sm text-gray-500 p-4 bg-gray-50 rounded-lg text-center border border-gray-200">
@@ -189,7 +264,7 @@ function QueryBuilder({ dataset, schema, remainingBudget, totalBudget, onExecute
           disabled={!canExecute}
           className={`w-full flex items-center justify-center space-x-2 px-6 py-4 rounded-lg font-semibold transition shadow-md ${
             canExecute
-              ? 'bg-blue-700 text-white hover:bg-blue-800'
+              ? 'bg-purple-700 text-white hover:bg-purple-800'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           }`}
         >
