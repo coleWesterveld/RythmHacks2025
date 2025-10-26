@@ -1,43 +1,113 @@
-import { Lock, Target } from 'lucide-react';
-import { useState } from 'react';
+import { Lock, Target, Shield, Gauge } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
-function EpsilonSlider({ value, onChange, remainingBudget }) {
-  const [epsilon, setEpsilon] = useState(value || 0.5);
+function EpsilonSlider({ value, onChange, remainingBudget, totalBudget, maxPerQuery = 1.0 }) {
+  const [epsilon, setEpsilon] = useState(value ?? 0.5);
+
+  const sliderMax = useMemo(() => {
+    const caps = [Number.isFinite(remainingBudget) ? remainingBudget : 2.0, maxPerQuery, 2.0];
+    return Math.max(0.1, Math.min(...caps));
+  }, [remainingBudget, maxPerQuery]);
+
+  useEffect(() => {
+    // Clamp incoming value if remaining budget changed
+    if (epsilon > sliderMax) {
+      setEpsilon(sliderMax);
+      onChange(sliderMax);
+    }
+  }, [sliderMax]);
 
   const handleChange = (e) => {
-    const newValue = parseFloat(e.target.value);
+    const raw = parseFloat(e.target.value);
+    const newValue = Math.min(sliderMax, Math.max(0.1, raw));
     setEpsilon(newValue);
     onChange(newValue);
   };
 
-  const insufficient = epsilon > remainingBudget;
+  const handleNumberChange = (e) => {
+    const raw = parseFloat(e.target.value || '');
+    if (Number.isNaN(raw)) return;
+    const newValue = Math.min(sliderMax, Math.max(0.1, raw));
+    setEpsilon(newValue);
+    onChange(newValue);
+  };
+
+  const insufficient = epsilon > (remainingBudget ?? 0);
+  const spent = (totalBudget ?? remainingBudget ?? 0) - (remainingBudget ?? 0);
+  const remainingAfter = Math.max(0, (remainingBudget ?? 0) - epsilon);
+
+  const total = totalBudget ?? (spent + (remainingBudget ?? 0));
+  const spentPct = total > 0 ? (spent / total) * 100 : 0;
+  const proposedPct = total > 0 ? (epsilon / total) * 100 : 0;
+  const remainingAfterPct = total > 0 ? (remainingAfter / total) * 100 : 0;
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6">
-      <h3 className="text-lg font-semibold mb-4">Privacy vs. Accuracy Trade-off</h3>
-      
-      {/* Slider */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2 text-sm">
-            <Lock className="h-4 w-4 text-primary" />
-            <span className="text-gray-600">Stronger Privacy</span>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold">Privacy vs. Accuracy</h3>
+        <div className="text-xs text-gray-500 flex items-center space-x-2">
+          <Shield className="h-4 w-4 text-blue-700" />
+          <span>Max per query: {maxPerQuery.toFixed(1)} ε</span>
+        </div>
+      </div>
+
+      {/* Overall Budget Bar */}
+      {Number.isFinite(total) && (
+        <div className="mb-4">
+          <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+            <span>Overall budget</span>
+            <span>{(total - spent).toFixed(1)} / {total.toFixed(1)} ε</span>
           </div>
-          <div className="flex items-center space-x-2 text-sm">
-            <Target className="h-4 w-4 text-secondary" />
-            <span className="text-gray-600">Higher Accuracy</span>
+          <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-full bg-gray-400" style={{ width: `${spentPct}%` }} />
+            <div className="h-full bg-amber-400" style={{ width: `${proposedPct}%` }} />
+            <div className="h-full bg-green-500" style={{ width: `${remainingAfterPct}%` }} />
+          </div>
+          <div className="flex justify-between text-[11px] text-gray-500 mt-1">
+            <span>Spent</span>
+            <span>After this query</span>
+            <span>Remaining</span>
+          </div>
+        </div>
+      )}
+
+      {/* Slider Row */}
+      <div className="space-y-3">
+        {/* Recommendations bar */}
+        <div className="flex items-center justify-between text-xs">
+          <span className="px-2 py-1 rounded bg-green-100 text-green-700">0.1–0.4 ε (High privacy)</span>
+          <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700">0.5–0.7 ε (Balanced)</span>
+          <span className="px-2 py-1 rounded bg-red-100 text-red-700">0.8–1.0 ε (Lower privacy)</span>
+        </div>
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center space-x-2 text-gray-600">
+            <Lock className="h-4 w-4 text-blue-700" />
+            <span>Stronger Privacy</span>
+          </div>
+          <div className="flex items-center space-x-2 text-gray-600">
+            <Target className="h-4 w-4 text-teal-600" />
+            <span>Higher Accuracy</span>
           </div>
         </div>
 
-        <div className="relative">
+        <div className="flex items-center space-x-3">
           <input
             type="range"
-            min="0.1"
-            max="2.0"
-            step="0.1"
+            min={0.1}
+            max={sliderMax}
+            step={0.1}
             value={epsilon}
             onChange={handleChange}
-            className="w-full h-2 bg-gradient-to-r from-primary to-secondary rounded-lg appearance-none cursor-pointer"
+            className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-700"
+          />
+          <input
+            type="number"
+            min={0.1}
+            max={sliderMax}
+            step={0.1}
+            value={Number.isFinite(epsilon) ? epsilon : ''}
+            onChange={handleNumberChange}
+            className="w-20 px-3 py-2 border border-gray-300 rounded text-sm"
           />
         </div>
 
@@ -50,20 +120,26 @@ function EpsilonSlider({ value, onChange, remainingBudget }) {
         <div className={`p-4 rounded-lg ${insufficient ? 'bg-red-50 border border-red-200' : 'bg-blue-50 border border-blue-200'}`}>
           {insufficient ? (
             <p className="text-sm text-red-700">
-              ⚠️ Insufficient budget. You have {remainingBudget.toFixed(1)} ε remaining.
+              ⚠️ Insufficient budget. You have {(remainingBudget ?? 0).toFixed(1)} ε remaining.
             </p>
           ) : (
             <p className="text-sm text-blue-700">
-              This query will use <strong>{epsilon.toFixed(1)} ε</strong> from your budget. 
-              Remaining after: <strong>{(remainingBudget - epsilon).toFixed(1)} ε</strong>
+              This query will use <strong>{epsilon.toFixed(1)} ε</strong>. Remaining after: <strong>{remainingAfter.toFixed(1)} ε</strong>
             </p>
           )}
         </div>
 
+        {/* Soft warning when close to per-query cap */}
+        {epsilon > (sliderMax * 0.9) && !insufficient && (
+          <div className="p-3 rounded bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+            Approaching per-query limit ({sliderMax.toFixed(1)} ε). Consider using 0.5–0.7 ε for balanced results.
+          </div>
+        )}
+
         {/* Explanation */}
         <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
-          <p className="mb-1"><strong>Lower epsilon (ε):</strong> Stronger privacy guarantees, more noise added to results</p>
-          <p><strong>Higher epsilon (ε):</strong> More accurate results, weaker privacy protection</p>
+          <p className="mb-1"><strong>Lower epsilon (ε)</strong> adds more noise but protects privacy better.</p>
+          <p><strong>Higher epsilon (ε)</strong> increases accuracy but weakens privacy.</p>
         </div>
       </div>
     </div>

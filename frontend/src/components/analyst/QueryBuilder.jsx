@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Play, Plus, X } from 'lucide-react';
 import EpsilonSlider from '../shared/EpsilonSlider';
 
-function QueryBuilder({ dataset, schema, remainingBudget, onExecuteQuery }) {
+function QueryBuilder({ dataset, schema, remainingBudget, totalBudget, onExecuteQuery }) {
   const [queryType, setQueryType] = useState('average');
   const [selectedColumn, setSelectedColumn] = useState('');
   const [filters, setFilters] = useState([]);
@@ -154,7 +154,7 @@ function QueryBuilder({ dataset, schema, remainingBudget, onExecuteQuery }) {
                     value={filter.value}
                     onChange={(e) => updateFilter(idx, 'value', e.target.value)}
                     placeholder="Value"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm"
+                    className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded text-sm"
                   />
                   <button
                     onClick={() => removeFilter(idx)}
@@ -177,6 +177,8 @@ function QueryBuilder({ dataset, schema, remainingBudget, onExecuteQuery }) {
           value={epsilon}
           onChange={setEpsilon}
           remainingBudget={remainingBudget}
+          totalBudget={totalBudget}
+          maxPerQuery={Math.min(1.0, remainingBudget || 1.0)}
         />
       </div>
 
