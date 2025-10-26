@@ -1,4 +1,4 @@
-import { Download, Plus, CheckCircle, Lock, Clock, Database, FileText, Eye, EyeOff, ChevronDown } from 'lucide-react';
+import { CheckCircle, Clock, Database, Eye, EyeOff, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 
 function ResultsDisplay({ result, queryHistory }) {
@@ -104,23 +104,6 @@ function ResultsDisplay({ result, queryHistory }) {
           </div>
         )}
 
-        {/* Privacy Certificate */}
-        <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
-          <div className="flex items-start space-x-3">
-            <Lock className="h-5 w-5 text-blue-700 mt-0.5 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-blue-900 mb-2">Privacy Certificate</div>
-              <div className="text-xs text-blue-800 space-y-1">
-                <p>✓ This result satisfies {result.epsilonSpent}-differential privacy</p>
-                <p>✓ Mathematical guarantee: No individual can be identified</p>
-                <p className="text-blue-600 mt-2 pt-2 border-t border-blue-200">
-                  Query ID: {result.queryId}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Query Details */}
         <div className="space-y-3">
           <h4 className="text-sm font-semibold text-gray-900">Query Details</h4>
@@ -155,17 +138,7 @@ function ResultsDisplay({ result, queryHistory }) {
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex space-x-2">
-          <button className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm">
-            <FileText className="h-4 w-4" />
-            <span>View Certificate</span>
-          </button>
-          <button className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition shadow-sm text-sm">
-            <Download className="h-4 w-4" />
-            <span>Download</span>
-          </button>
-        </div>
+        {/* No certificate/download actions per requirements */}
       </div>
 
       {/* Query History Footer */}

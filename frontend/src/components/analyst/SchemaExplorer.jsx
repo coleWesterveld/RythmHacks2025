@@ -8,11 +8,11 @@ function SchemaExplorer({ schema }) {
     switch (type) {
       case 'Integer':
       case 'Numeric':
-        return '🔢';
+        return '';
       case 'Categorical':
-        return '📝';
+        return '';
       default:
-        return '📊';
+        return '';
     }
   };
 

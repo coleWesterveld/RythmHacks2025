@@ -42,7 +42,7 @@ function QueryWorkspace() {
             name: c.name,
             type: c.type === 'numeric' ? 'Numeric' : 'Categorical',
             queryable: true,
-            icon: c.type === 'numeric' ? '🔢' : '📝'
+            icon: c.type === 'numeric' ? '' : ''
           }));
         }
 
@@ -210,7 +210,7 @@ function QueryWorkspace() {
                             name: c.name,
                             type: c.type === 'numeric' ? 'Numeric' : 'Categorical',
                             queryable: true,
-                            icon: c.type === 'numeric' ? '🔢' : '📝'
+                            icon: c.type === 'numeric' ? '' : ''
                           }));
                         }
                         const newDataset = {
@@ -240,7 +240,7 @@ function QueryWorkspace() {
                           if (tableName) {
                             const colsRes = await listColumns(last, tableName);
                             const cols = colsRes.columns || [];
-                            schemaObj.columns = cols.map(c => ({ name: c.name, type: c.type === 'numeric' ? 'Numeric' : 'Categorical', queryable: true, icon: c.type === 'numeric' ? '🔢' : '📝' }));
+                            schemaObj.columns = cols.map(c => ({ name: c.name, type: c.type === 'numeric' ? 'Numeric' : 'Categorical', queryable: true, icon: c.type === 'numeric' ? '' : '' }));
                           }
                           const dataset = {
                             id: all[all.length - 1].id,

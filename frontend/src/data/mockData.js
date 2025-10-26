@@ -81,11 +81,11 @@ export const mockResearchers = [
   export const mockSchema = {
     tableName: 'patient_records',
     columns: [
-      { name: 'patient_id', type: 'Integer', queryable: false, icon: '🔢' },
-      { name: 'age', type: 'Numeric', queryable: true, icon: '🔢' },
-      { name: 'city', type: 'Categorical', queryable: true, icon: '📝' },
-      { name: 'condition', type: 'Categorical', queryable: true, icon: '📝' },
-      { name: 'days_in_hospital', type: 'Numeric', queryable: true, icon: '🔢' },
-      { name: 'medication', type: 'Categorical', queryable: true, icon: '💊' }
+      { name: 'patient_id', type: 'Integer', queryable: false, icon: '' },
+      { name: 'age', type: 'Numeric', queryable: true, icon: '' },
+      { name: 'city', type: 'Categorical', queryable: true, icon: '' },
+      { name: 'condition', type: 'Categorical', queryable: true, icon: '' },
+      { name: 'days_in_hospital', type: 'Numeric', queryable: true, icon: '' },
+      { name: 'medication', type: 'Categorical', queryable: true, icon: '' }
     ]
   };

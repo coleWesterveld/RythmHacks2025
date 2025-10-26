@@ -1,42 +1,8 @@
 import { useState } from 'react';
-import { Download, Clock, Filter, Search } from 'lucide-react';
+import { Clock, Filter, Search } from 'lucide-react';
 
 function QueryHistory() {
-  const [queries] = useState([
-    {
-      id: 1,
-      queryText: 'AVG(age) WHERE condition = "Diabetes"',
-      result: '48.1 years',
-      groundTruth: '47.9 years',
-      epsilonSpent: 0.5,
-      accuracy: '±2.1 years',
-      dataset: 'Patient Demographics Q3 2024',
-      executedAt: new Date(Date.now() - 7200000).toISOString(),
-      queryId: 'QRY-ABC123'
-    },
-    {
-      id: 2,
-      queryText: 'COUNT(*) WHERE age > 65',
-      result: '3,245 records',
-      groundTruth: '3,234 records',
-      epsilonSpent: 0.3,
-      accuracy: '±45 records',
-      dataset: 'Patient Demographics Q3 2024',
-      executedAt: new Date(Date.now() - 14400000).toISOString(),
-      queryId: 'QRY-DEF456'
-    },
-    {
-      id: 3,
-      queryText: 'SUM(days_in_hospital) WHERE condition = "Surgery"',
-      result: '15,234 days',
-      groundTruth: '15,189 days',
-      epsilonSpent: 0.7,
-      accuracy: '±120 days',
-      dataset: 'Patient Demographics Q3 2024',
-      executedAt: new Date(Date.now() - 21600000).toISOString(),
-      queryId: 'QRY-GHI789'
-    }
-  ]);
+  const [queries] = useState([]);
 
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
@@ -53,15 +19,9 @@ function QueryHistory() {
   return (
     <div>
       {/* Page Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Query History</h1>
-          <p className="text-gray-600 mt-1">Review all your privacy-preserving queries and results</p>
-        </div>
-        <button className="bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 hover:bg-blue-800 transition shadow-md">
-          <Download className="h-5 w-5" />
-          <span>Export History</span>
-        </button>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Query History</h1>
+        <p className="text-gray-600 mt-1">Review your privacy-preserving queries</p>
       </div>
 
       {/* Filters */}
@@ -125,18 +85,7 @@ function QueryHistory() {
               </div>
             </div>
 
-            <div className="mt-4 flex space-x-2">
-              <button className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                View Certificate
-              </button>
-              <button className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                Re-run Query
-              </button>
-              <button className="px-4 py-2 text-sm text-blue-700 hover:bg-blue-50 rounded-lg transition">
-                <Download className="h-4 w-4 inline mr-1" />
-                Download
-              </button>
-            </div>
+            {/* No certificate/download actions */}
           </div>
         ))}
       </div>
