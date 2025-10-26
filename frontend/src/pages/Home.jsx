@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Database, CheckCircle, TrendingUp, Lock, Upload, Play } from 'lucide-react';
+import { Shield, Database, TrendingUp, Lock, Upload, Play } from 'lucide-react';
 
 function Home() {
   const navigate = useNavigate();
   const [stats] = useState({
-    datasetsUploaded: 3,
-    queriesRun: 47,
-    privacyBudgetRemaining: 12.5,
-    totalBudget: 15.0
+    datasetsUploaded: 0,
+    privacyBudgetRemaining: 0,
+    totalBudget: 0
   });
 
   const budgetPercentage = (stats.privacyBudgetRemaining / stats.totalBudget) * 100;
@@ -63,18 +62,7 @@ function Home() {
           <p className="text-xs text-gray-500">Securely stored and encrypted</p>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition">
-          <div className="flex items-center space-x-3 mb-3">
-            <div className="bg-green-100 p-3 rounded-lg">
-              <TrendingUp className="h-6 w-6 text-green-700" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Private Queries Run</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.queriesRun}</p>
-            </div>
-          </div>
-          <p className="text-xs text-gray-500">All with DP guarantees</p>
-        </div>
+        {/* Removed fake queries run card */}
 
         <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition">
           <div className="flex items-center space-x-3 mb-3">
@@ -112,11 +100,11 @@ function Home() {
 
         <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
           <div className="bg-green-100 p-4 rounded-xl w-fit mb-4">
-            <CheckCircle className="h-8 w-8 text-green-700" />
+            <TrendingUp className="h-8 w-8 text-green-700" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">Mathematical Guarantees</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Clear Privacy Trade-offs</h3>
           <p className="text-gray-600">
-            Every query comes with a differential privacy certificate proving no individual can be identified.
+            Choose privacy vs. accuracy with an epsilon slider, guided presets, and guardrails.
           </p>
         </div>
 

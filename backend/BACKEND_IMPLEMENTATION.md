@@ -262,13 +262,13 @@ class CSVProcessor:
             # Map pandas dtype to user-friendly type
             if dtype in ['int64', 'int32']:
                 col_type = 'Integer'
-                icon = '🔢'
+                icon = ''
             elif dtype in ['float64', 'float32']:
                 col_type = 'Numeric'
-                icon = '🔢'
+                icon = ''
             else:
                 col_type = 'Categorical'
-                icon = '📝'
+                icon = ''
             
             columns.append({
                 "name": col,

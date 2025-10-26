@@ -72,13 +72,25 @@ async def execute_differential_privacy_query(
         )
         
         return response
-        
+    except HTTPException as he:
+        # Re-raise to let FastAPI handle and include CORS headers
+        raise he
+    except ValueError as ve:
+        # Validation/runtime errors (e.g., cohort too small)
+        import traceback
+        print("\n--- QUERY VALUE ERROR ---")
+        traceback.print_exc()
+        print("--- END QUERY VALUE ERROR ---\n")
+        raise HTTPException(
+            status_code=400,
+            detail=str(ve)
+        )
     except Exception as e:
         import traceback
         print("\n--- QUERY ERROR ---")
         traceback.print_exc()
         print("--- END QUERY ERROR ---\n")
-        return HTTPException(
+        raise HTTPException(
             status_code=500,
             detail=f"Error executing differential privacy query: {repr(e)}"
         )
