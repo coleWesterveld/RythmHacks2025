@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Literal, Optional, Dict, Any
+from typing import Literal, Optional, Dict, Any, Union
 from enum import Enum
 
 class QueryOperation(str, Enum):
@@ -7,14 +7,17 @@ class QueryOperation(str, Enum):
     AVERAGE = "AVERAGE"
     COUNT = "COUNT"
 
+class FilterCondition(BaseModel):
+    value: Union[str, int, float]
+    operator: str = Field(default="=", description="SQL operator: =, >, <, >=, <=, !=, LIKE, IN")
+
 class DifferentialPrivacyQuery(BaseModel):
     operation: QueryOperation
     column: str = Field(..., description="Column name to perform operation on")
     table: str = Field(..., description="Table name to query")
     epsilon: float = Field(..., gt=0, description="Privacy parameter (epsilon > 0)")
-    epsilon_budget: Optional[float] = Field(None, gt=0, description="Total privacy budget available (optional)")
-    filters: Optional[Dict[str, Any]] = Field(None, description="Optional filters for the query")
-    database_name: str = Field(..., description="Database file name to query")
+    epsilon_budget: float = Field(..., gt=0, description="Total privacy budget available (optional)")
+    filters: Optional[Dict[str, FilterCondition]] = Field(None, description="Optional filters for the query")
 
 class QueryResponse(BaseModel):
     result: float
