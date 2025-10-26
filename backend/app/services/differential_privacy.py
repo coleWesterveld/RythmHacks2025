@@ -26,6 +26,9 @@ class DifferentialPrivacyService:
         # Add noise to true value
         noisy_result = true_value + noise
         
+        if noisy_result <= 0:
+            return self.add_laplace_noise(true_value, epsilon, sensitivity)
+
         return noisy_result, noise
     
     def execute_private_query(
@@ -84,7 +87,7 @@ class DifferentialPrivacyService:
         column: str, 
         table: str, 
         db: Session,
-        filters: Optional[Dict[str, Any]] = None
+        filters: Optional[Dict[str, {"value": Any, "operator": str}]] = None
     ) -> float:
         where_sql, params = self._build_where_clause(filters)
 
@@ -109,6 +112,8 @@ class DifferentialPrivacyService:
         result = db.execute(sql, params).scalar()
         return int(result or 0)
     
-    def validate_epsilon(self, epsilon: float) -> bool:
-        print("Validating epsilon:", type(epsilon), epsilon)
+    def validate_epsilon(self, epsilon: float) -> bool:        
         return epsilon > 0.0 and epsilon <= 10.0
+    
+    def validate_range(self, epsilon: float, epsilon_budget: float) -> bool:
+      return epsilon <= epsilon_budget
