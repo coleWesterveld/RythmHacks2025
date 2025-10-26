@@ -50,7 +50,13 @@ class DifferentialPrivacyService:
         Returns:
             Tuple of (private_result, noise_added)
         """
-        # Get true result from database
+        # Optional: enforce minimum cohort size to avoid tiny groups
+        cohort_size = self._get_count(table, db, filters)
+        MIN_COHORT = 25
+        if cohort_size < MIN_COHORT:
+            raise ValueError(f"Cohort too small (n={cohort_size}). Minimum required is {MIN_COHORT} to protect privacy.")
+
+        # Get true result from database (with parameter binding)
         true_result = self._get_true_result(operation, column, table, db, filters)
         
         # Get sensitivity for this operation
@@ -61,6 +67,17 @@ class DifferentialPrivacyService:
         
         return private_result, noise
     
+    def _build_where_clause(self, filters: Optional[Dict[str, Any]]):
+        if not filters:
+            return "", {}
+        clauses = []
+        params = {}
+        for i, (col, val) in enumerate(filters.items()):
+            key = f"p{i}"
+            clauses.append(f"{col} = :{key}")
+            params[key] = val
+        return " WHERE " + " AND ".join(clauses), params
+
     def _get_true_result(
         self, 
         operation: QueryOperation, 
@@ -69,18 +86,28 @@ class DifferentialPrivacyService:
         db: Session,
         filters: Optional[Dict[str, Any]] = None
     ) -> float:
-        
+        where_sql, params = self._build_where_clause(filters)
+
         if operation == QueryOperation.COUNT:
-            result = db.execute(text(f"SELECT COUNT(*) FROM {table}")).scalar()
-            return float(result)
+            sql = text(f"SELECT COUNT(*) FROM {table}{where_sql}")
+            result = db.execute(sql, params).scalar()
+            return float(result or 0)
         elif operation == QueryOperation.SUM:
-            result = db.execute(text(f"SELECT SUM({column}) FROM {table}")).scalar()
+            sql = text(f"SELECT SUM({column}) FROM {table}{where_sql}")
+            result = db.execute(sql, params).scalar()
             return float(result or 0)
         elif operation == QueryOperation.AVERAGE:
-            result = db.execute(text(f"SELECT AVG({column}) FROM {table}")).scalar()
+            sql = text(f"SELECT AVG({column}) FROM {table}{where_sql}")
+            result = db.execute(sql, params).scalar()
             return float(result or 0)
         
         return 0.0
+
+    def _get_count(self, table: str, db: Session, filters: Optional[Dict[str, Any]] = None) -> int:
+        where_sql, params = self._build_where_clause(filters)
+        sql = text(f"SELECT COUNT(*) FROM {table}{where_sql}")
+        result = db.execute(sql, params).scalar()
+        return int(result or 0)
     
     def validate_epsilon(self, epsilon: float) -> bool:
         print("Validating epsilon:", type(epsilon), epsilon)

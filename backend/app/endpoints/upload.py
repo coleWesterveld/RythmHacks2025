@@ -19,10 +19,8 @@ class UploadResponse(BaseModel):
     message: str
     filename: str
     rows_processed: int
-    schema_detected: dict
     database_name: str
-    columns: dict  # Added columns field for frontend
-    # Removed columns field for frontend
+    schema_detected: dict
 
 def validate_csv_file(file: UploadFile):
     """Validate that the uploaded file is a CSV"""
@@ -81,7 +79,8 @@ async def upload_csv(
             message="File uploaded and processed successfully",
             filename=file.filename,
             rows_processed=len(df),
-            database_name=db_name
+            database_name=db_name,
+            schema_detected=schema
         )
     except Exception as e:
         # Clean up in case of error
