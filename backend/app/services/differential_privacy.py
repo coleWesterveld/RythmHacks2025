@@ -26,6 +26,9 @@ class DifferentialPrivacyService:
         # Add noise to true value
         noisy_result = true_value + noise
         
+        if noisy_result <= 0:
+            return self.add_laplace_noise(true_value, epsilon, sensitivity)
+
         return noisy_result, noise
     
     def execute_private_query(
@@ -67,21 +70,49 @@ class DifferentialPrivacyService:
         column: str, 
         table: str, 
         db: Session,
-        filters: Optional[Dict[str, Any]] = None
+        filters: Optional[Dict[str, {"value": Any, "operator": str}]] = None
     ) -> float:
         
+        # Build WHERE clause from filters dict
+        where_clause = ""
+        params = {}
+        
+        if filters:
+            conditions = []
+            # Valid SQL operators to prevent injection
+            valid_operators = {'=', '>', '<', '>=', '<=', '!='}
+            
+            for key, body in filters.items():
+                #Shouldnt ever happen but whatever
+                if not body.value or not body.operator:
+                    continue
+                    
+                # Validate operator to prevent SQL injection
+                if body.operator not in valid_operators:
+                    raise ValueError(f"Invalid operator: {body.operator}")
+                    
+                param_name = f"filter_{key}"
+                conditions.append(f"{key} {body.operator} :{param_name}")
+                params[param_name] = body.value
+            where_clause = " WHERE " + " AND ".join(conditions)
+        
         if operation == QueryOperation.COUNT:
-            result = db.execute(text(f"SELECT COUNT(*) FROM {table}")).scalar()
+            query = f"SELECT COUNT(*) FROM {table}{where_clause}"
+            result = db.execute(text(query), params).scalar()
             return float(result)
         elif operation == QueryOperation.SUM:
-            result = db.execute(text(f"SELECT SUM({column}) FROM {table}")).scalar()
+            query = f"SELECT SUM({column}) FROM {table}{where_clause}"
+            result = db.execute(text(query), params).scalar()
             return float(result or 0)
         elif operation == QueryOperation.AVERAGE:
-            result = db.execute(text(f"SELECT AVG({column}) FROM {table}")).scalar()
+            query = f"SELECT AVG({column}) FROM {table}{where_clause}"
+            result = db.execute(text(query), params).scalar()
             return float(result or 0)
         
         return 0.0
     
-    def validate_epsilon(self, epsilon: float) -> bool:
-        print("Validating epsilon:", type(epsilon), epsilon)
+    def validate_epsilon(self, epsilon: float) -> bool:        
         return epsilon > 0.0 and epsilon <= 10.0
+    
+    def validate_range(self, epsilon: float, epsilon_budget: float) -> bool:
+      return epsilon <= epsilon_budget

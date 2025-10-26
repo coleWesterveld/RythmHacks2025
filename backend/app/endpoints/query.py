@@ -25,21 +25,24 @@ async def execute_differential_privacy_query(
         QueryResponse with the private result and metadata
     """
     try:
-        # Validate epsilon parameter
-        print("Validating epsilon:", type(query.epsilon), query.epsilon)
-
         if not dp_service.validate_epsilon(query.epsilon):
             raise HTTPException(
                 status_code=400, 
                 detail="Epsilon must be between 0 and 10"
             )
         
-        # Validate epsilon budget if provided
-        if query.epsilon_budget and query.epsilon > query.epsilon_budget:
+        if query.epsilon > query.epsilon_budget:
+            raise HTTPException(
+                status_code=400,
+                detail="Epsilon Out of Range"
+            )
+
+        if query.epsilon_budget and not dp_service.validate_range(query.epsilon, query.epsilon_budget):
             raise HTTPException(
                 status_code=400,
                 detail="Epsilon must be less than or equal to epsilon budget"
             )
+            
         
         # Execute the private query (database access handled in service)
         private_result, noise_added = dp_service.execute_private_query(
@@ -48,7 +51,7 @@ async def execute_differential_privacy_query(
             table=query.table,
             epsilon=query.epsilon,
             db=db,
-            filters=query.filters
+            filters=query.filters                                                                   
         )
         
         # Prepare response
